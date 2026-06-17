@@ -71,7 +71,7 @@
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
                     <TextBlock Text="{Binding LocalClock}" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="12,0" />
-                    <Button x:Name="SessionButton" Content="📈 Sessions" Command="{Binding ToggleSessionPanelCommand}" Padding="12,5" Margin="4,0,8,0" ToolTip="View Forex trading sessions" />
+                    <Button x:Name="SessionButton" Content="📈 Sessions" Command="{Binding ToggleSessionPanelCommand}" Padding="12,5" Margin="4,0,8,0" Background="{StaticResource DS_PanelSurfaceBrush}" ToolTip="View Forex trading sessions" />
                     <Button Content="✎ Edit Lessons" Command="{Binding OpenLessonEditorCommand}" Padding="12,5" Margin="0,0,8,0" Background="{StaticResource DS_PanelSurfaceBrush}"/>
                     <Button Content="Ask AI" Command="{Binding ExportAiReviewCommand}" Padding="12,5" />
                     <Button Content="Back" Command="{Binding PreviousStepCommand}" Padding="10,5" />
@@ -92,7 +92,7 @@
                 BorderThickness="1"
                 CornerRadius="6,6,6,6"
                 Padding="12"
-                Margin="700,58,8,0"
+                Margin="0,52,8,0"
                 Visibility="{Binding IsSessionPanelOpen, Converter={StaticResource BoolToVisibilityConverter}}"
                 Width="400"
                 HorizontalAlignment="Right"
