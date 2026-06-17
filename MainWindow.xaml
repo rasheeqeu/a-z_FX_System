@@ -21,6 +21,7 @@
     <Window.Resources>
         <converters:UrlToUriConverter x:Key="UrlToUriConverter" />
         <converters:StringEqualsConverter x:Key="StringEqualsConverter" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
 
         <Style x:Key="Panel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource DS_SecondaryBgBrush}" />
