@@ -30,6 +30,8 @@ public partial class ShellViewModel(
     [ObservableProperty] private string aiReviewQuestion = "Review this demo trade plan. What am I missing?";
     [ObservableProperty] private bool isSessionPanelOpen = false;
     [ObservableProperty] private ObservableCollection<SessionStatus> sessionsData = new();
+    [ObservableProperty] private string selectedTimezone = "Local";
+    [ObservableProperty] private ObservableCollection<string> availableTimezones = new();
 
     private readonly System.Windows.Threading.DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
@@ -84,6 +86,14 @@ public partial class ShellViewModel(
         await Learning.InitializeAsync();
         await Journal.InitializeAsync();
         await RefreshReviewAsync();
+
+        // Initialize timezones
+        AvailableTimezones.Add("Local");
+        AvailableTimezones.Add("Dubai (GMT +4)");
+        AvailableTimezones.Add("Kolkata (GMT +5:30)");
+        AvailableTimezones.Add("London (GMT +0)");
+        AvailableTimezones.Add("New York (GMT -5)");
+
         UpdateClock();
         _clockTimer.Tick += (_, _) => UpdateClock();
         _clockTimer.Start();
