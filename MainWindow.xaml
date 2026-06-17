@@ -86,18 +86,17 @@
         </Border>
 
         <!-- Session Panel Dropdown -->
-        <Border Grid.Row="0"
-                Background="{StaticResource DS_SecondaryBgBrush}"
-                BorderBrush="{StaticResource DS_PanelSurfaceBrush}"
-                BorderThickness="1"
-                CornerRadius="6,6,6,6"
-                Padding="12"
-                Margin="0,52,8,0"
-                Visibility="{Binding IsSessionPanelOpen, Converter={StaticResource BoolToVisibilityConverter}}"
-                Width="400"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                Panel.ZIndex="100">
+        <Popup IsOpen="{Binding IsSessionPanelOpen}"
+               Placement="Bottom"
+               PlacementTarget="{Binding ElementName=SessionButton}"
+               AllowsTransparency="True"
+               Focusable="False">
+            <Border Background="{StaticResource DS_SecondaryBgBrush}"
+                    BorderBrush="{StaticResource DS_PanelSurfaceBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6,6,6,6"
+                    Padding="12"
+                    Width="400">
                 <StackPanel>
                     <!-- Session List -->
                     <TextBlock Text="Forex Trading Sessions" FontWeight="SemiBold" Margin="0,0,0,12" />
@@ -173,7 +172,8 @@
                                Foreground="{StaticResource DS_AccentBrush}"
                                TextWrapping="Wrap" />
                 </StackPanel>
-        </Border>
+            </Border>
+        </Popup>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
