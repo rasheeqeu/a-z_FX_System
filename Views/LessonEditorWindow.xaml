@@ -1,0 +1,202 @@
+<Window x:Class="ForexTradingWorkspace.Views.LessonEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Lesson Editor — Update Your Learning Plan"
+        Width="1100" Height="720"
+        MinWidth="800" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize">
+
+    <Window.Resources>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource DS_SecondaryTextBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,10,0,3"/>
+        </Style>
+        <Style x:Key="Field" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource DS_PanelSurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource DS_PrimaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DS_BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CaretBrush" Value="{StaticResource DS_PrimaryTextBrush}"/>
+        </Style>
+        <Style x:Key="SideItem" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource DS_SecondaryTextBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                    <Setter Property="Foreground" Value="#111"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource DS_PanelSurfaceBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource DS_BackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="44"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource DS_SecondaryBgBrush}" Padding="16,0">
+            <DockPanel VerticalAlignment="Center">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="+ Add Lesson" Command="{Binding AddLessonCommand}"
+                            Padding="12,6" Margin="4,0"
+                            Background="{StaticResource DS_PanelSurfaceBrush}"/>
+                    <Button Content="↺ Reload from File" Command="{Binding ReloadCommand}"
+                            Padding="12,6" Margin="4,0"
+                            Background="{StaticResource DS_PanelSurfaceBrush}"/>
+                    <Button Content="✓ Save" Command="{Binding SaveCurrentCommand}"
+                            Padding="18,6" Margin="8,0,0,0"
+                            Background="{StaticResource DS_AccentBrush}" Foreground="#111"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Lesson Editor" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{StaticResource DS_PrimaryTextBrush}"/>
+                    <TextBlock Text="{Binding Status}" Margin="16,0,0,0"
+                               Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="12"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Body -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" MinWidth="160"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: lesson list -->
+            <Border Grid.Column="0" Background="{StaticResource DS_SecondaryBgBrush}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="LESSONS" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource DS_SecondaryTextBrush}"
+                               Margin="10,10,10,4"/>
+                    <ListBox ItemsSource="{Binding Items}"
+                             SelectedItem="{Binding SelectedItem}"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ItemContainerStyle="{StaticResource SideItem}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayLabel}" TextWrapping="Wrap" FontSize="12"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
+                          Background="{StaticResource DS_BorderBrush}"/>
+
+            <!-- Right: edit form -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="20,16,20,16">
+                <StackPanel>
+
+                    <!-- Row 1: Section / ID / Duration -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Section"/>
+                            <TextBox Style="{StaticResource Field}" Text="{Binding EditSection, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Lesson ID"/>
+                            <TextBox Style="{StaticResource Field}" Text="{Binding EditId, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Opacity="0.5"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Duration"/>
+                            <TextBox Style="{StaticResource Field}" Text="{Binding EditDuration, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Title -->
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Lesson Title"/>
+                    <TextBox Style="{StaticResource Field}" Text="{Binding EditTitle, UpdateSourceTrigger=PropertyChanged}" FontSize="15" FontWeight="SemiBold"/>
+
+                    <!-- Content / Transcript -->
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="COURSE CONTENT / TRANSCRIPT  (paste from your course — AI compares your explanation against this)"/>
+                    <TextBox Style="{StaticResource Field}"
+                             Text="{Binding EditContent, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             Height="200" VerticalScrollBarVisibility="Auto"
+                             FontFamily="Consolas" FontSize="12"
+                            />
+
+                    <!-- Terms + Mistakes side by side -->
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="KEY TERMS  (comma-separated)"/>
+                            <TextBox Style="{StaticResource Field}"
+                                     Text="{Binding EditTerms, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="False" TextWrapping="Wrap" Height="72"
+                                    />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="COMMON MISTAKES  (comma-separated)"/>
+                            <TextBox Style="{StaticResource Field}"
+                                     Text="{Binding EditMistakes, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="False" TextWrapping="Wrap" Height="72"
+                                    />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Practice task -->
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="PRACTICE TASK  (what you must do before creating a demo trade)"/>
+                    <TextBox Style="{StaticResource Field}"
+                             Text="{Binding EditPractice, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap" Height="80"
+                            />
+
+                    <!-- Dirty indicator + delete -->
+                    <DockPanel Margin="0,16,0,4">
+                        <Button DockPanel.Dock="Right" Content="Delete this lesson"
+                                Command="{Binding DeleteCurrentCommand}"
+                                Padding="10,5" Background="Transparent"
+                                Foreground="#e05c5c" BorderBrush="#e05c5c"/>
+                        <TextBlock Text="● Unsaved changes" FontSize="11"
+                                   Foreground="{StaticResource DS_AccentBrush}"
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding DirtyVisibility}"/>
+                    </DockPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="{StaticResource DS_SecondaryBgBrush}" Padding="16,0">
+            <DockPanel VerticalAlignment="Center">
+                <TextBlock DockPanel.Dock="Right"
+                           Text="Ctrl+S to save • Changes write to lessons.txt automatically"
+                           Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="11"/>
+                <TextBlock Text="Add content, terms, and practice tasks for each lesson as you study your course."
+                           Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="11"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
