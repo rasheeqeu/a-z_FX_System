@@ -102,7 +102,7 @@
                     <DockPanel Margin="0,0,0,12">
                         <TextBlock Text="Forex Market Time Zone" FontWeight="SemiBold" DockPanel.Dock="Left" VerticalAlignment="Center" />
                         <ComboBox ItemsSource="{Binding AvailableTimezones}"
-                                  SelectedItem="{Binding SelectedTimezone}"
+                                  SelectedItem="{Binding SelectedTimezone, UpdateSourceTrigger=PropertyChanged}"
                                   DockPanel.Dock="Right"
                                   Width="150"
                                   Padding="8,4"

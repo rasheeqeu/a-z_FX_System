@@ -279,6 +279,12 @@ public partial class ShellViewModel(
     }
 
     [RelayCommand]
+    private void OnTimezoneChanged()
+    {
+        UpdateSessionStatus();
+    }
+
+    [RelayCommand]
     private async Task ExportAiReviewAsync()
     {
         if (Planner.RuleChecks.Count == 0)
@@ -321,6 +327,12 @@ public partial class ShellViewModel(
         var sessionsStatus = sessionClockService.GetAllSessionsStatus(utcNow);
         var localTimes = sessionClockService.GetAllSessionsLocalTimes();
 
+        // Session colors for each market
+        var sessionColors = new[] { "#2196F3", "#E91E63", "#FF9800", "#4CAF50" };
+
+        // Parse timezone offset
+        var (tzOffsetHours, tzOffsetMinutes) = GetTimezoneOffset(SelectedTimezone);
+
         // Build updated sessions list
         var updated = new List<SessionStatus>();
         for (int i = 0; i < sessionClockService.Sessions.Count; i++)
@@ -331,6 +343,7 @@ public partial class ShellViewModel(
             updated.Add(new SessionStatus
             {
                 Name = name,
+                SessionColor = sessionColors[i],
                 UtcOpen = openUtc,
                 UtcClose = closeUtc,
                 LocalOpen = localOpen,
@@ -355,5 +368,28 @@ public partial class ShellViewModel(
                 SessionsData[i] = updated[i];
             }
         }
+    }
+
+    private (int hours, int minutes) GetTimezoneOffset(string timezone)
+    {
+        return timezone switch
+        {
+            "Dubai (GMT +4)" => (4, 0),
+            "Kolkata (GMT +5:30)" => (5, 30),
+            "London (GMT +0)" => (0, 0),
+            "New York (GMT -5)" => (-5, 0),
+            _ => GetLocalTimezoneOffset()
+        };
+    }
+
+    private (int hours, int minutes) GetLocalTimezoneOffset()
+    {
+        var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+        return ((int)offset.TotalHours, offset.Minutes);
+    }
+
+    partial void OnSelectedTimezoneChanged(string value)
+    {
+        UpdateSessionStatus();
     }
 }
