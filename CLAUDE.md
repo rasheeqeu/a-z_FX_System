@@ -57,7 +57,7 @@ The app uses a **three-panel workspace**:
 2. Create app directories (`AppPaths.DataPath`, `ScreenshotsPath`, `LogsPath`)
 3. Configure Serilog → daily log files at `%LocalAppData%\ForexTradingWorkspace\Logs\`
 4. Build DI container (Microsoft.Extensions.Hosting)
-5. Show `MainWindow` immediately
+5. Show `MainWindow` immediately (DataContext = `ShellViewModel`)
 6. Run async initialization: `IDatabaseInitializer.InitializeAsync()` → `ShellViewModel.InitializeAsync()`
 
 **Key Pattern:** The app shows the UI first, then initializes database/state asynchronously. This prevents blocking the user on startup.
@@ -84,13 +84,34 @@ Uses **CommunityToolkit.Mvvm** with source generators:
 - Must not reference WPF/XAML
 - Injected as singletons (see [App.xaml.cs](App.xaml.cs:44-81))
 
+### Two-ViewModel Shell Pattern
+
+There are two top-level ViewModels coordinating the shell:
+
+- **`MainViewModel`** — bound to `MainWindow` DataContext. Owns all workspace-level state: module navigation (`ActiveModule`), layout (`ModuleStateMachine`, `LayoutStateMachine`), browser URL, trades list, session clock, account balance, bookmarks, checklist, and all `[RelayCommand]` methods that drive the shell UI.
+- **`ShellViewModel`** — orchestrates the module-scoped sub-ViewModels (Learning, Planner, Journal, Review, Broker, Settings). Called in `App.xaml.cs` for async initialization after the window shows.
+
+Both are registered as singletons and injected where needed.
+
+### Navigation & Layout State Machines
+
+`MainViewModel` contains two state machines that coordinate navigation:
+
+- **`ModuleStateMachine`** — tracks which module is active; drives `ActiveModule` and whether the side panel should open
+- **`LayoutStateMachine`** — manages `SinglePanel` vs `SplitPanel` layout; toggled by the Calculator button or module auto-open logic
+
+Navigate via `NavigateCommand.Execute("ModuleName")` — this calls both state machines and saves/restores per-module screen state through `IStateService`.
+
 ### Module Architecture
 
-All modules follow the same pattern: **ViewModel → View → Service(s)**
+All modules follow the same pattern: **ViewModel → section in MainWindow.xaml → Service(s)**
+
+Modules are **not** separate XAML files — they are sections within `MainWindow.xaml` shown/hidden by `ActiveModule`. The only standalone window is `LessonEditorWindow.xaml` (used for editing lesson content).
 
 | Module | ViewModel | Purpose |
 |--------|-----------|---------|
-| **Shell** | `ShellViewModel` | Global layout, navigation, top bar state |
+| **Shell** | `ShellViewModel` | Sub-ViewModel orchestration, async init |
+| **Main/Workspace** | `MainViewModel` | Shell state, navigation, browser, clocks |
 | **Learning** | `LearningViewModel` | Lesson roadmap, lesson details, progress tracking |
 | **Broker** | `BrokerPortalViewModel` | Embedded WebView2 broker portal, bookmarks, browser navigation |
 | **Plan** | `TradePlannerViewModel` | Trade plan entry (entry, SL, TP, reason, emotion, etc.) |
@@ -118,6 +139,9 @@ All modules follow the same pattern: **ViewModel → View → Service(s)**
 - `IAppSettingsService` + `DpapiEncryptionService` — Settings stored at `Data\settings.secure.json` (DPAPI encrypted)
 - `IWorkspaceLayoutService` — Layout state → `Data\workspace-layout.json`
 - `IStateService` — Module navigation state machine
+
+**Feedback & Notifications:**
+- `IFeedbackService` — Central service for toast notifications and progress overlays. Use `ShowNotification(title, msg, type)`, `ShowProgress(title, pct)`, `HideProgress()`. All user-visible feedback must go through this; never write to UI directly from a ViewModel.
 
 **Other:**
 - `IAuditService` — Logs all user actions
@@ -165,10 +189,10 @@ All modules follow the same pattern: **ViewModel → View → Service(s)**
 
 **Adding a New Module:**
 1. Create `ViewModels/<ModuleName>ViewModel.cs` inheriting from `ObservableObject`
-2. Create `Views/<ModuleName>View.xaml` (XAML only)
-3. Create `Views/<ModuleName>View.xaml.cs` with DataContext binding
-4. Register in [App.xaml.cs](App.xaml.cs) DI container as singleton
-5. Add navigation item in `ShellViewModel.Modules`
+2. Add a section inside `MainWindow.xaml` for the module's view (modules are not separate XAML files)
+3. Register the ViewModel in [App.xaml.cs](App.xaml.cs) DI container as singleton
+4. Inject it into `ShellViewModel` and expose as a property
+5. Add the module name to `ModuleStateMachine` transitions
 
 **Adding a Service:**
 1. Create interface `Services/I<ServiceName>.cs`
@@ -177,10 +201,13 @@ All modules follow the same pattern: **ViewModel → View → Service(s)**
 4. Inject into ViewModels/other services via constructor
 5. Keep business logic (risk, rules, export) **independent of WPF**
 
+**Design System:**
+All XAML styling uses `DS_` prefixed resource keys defined in [`Resources/DesignSystem.xaml`](Resources/DesignSystem.xaml). Use these keys for colors, brushes, spacing, and typography — do not hardcode values. Key examples: `DS_BackgroundBrush`, `DS_AccentBrush`, `DS_PrimaryTextBrush`, `DS_Spacing_M`, `DS_SectionTitle16`.
+
 **Binding to UI:**
 - Property: `[ObservableProperty] private string? tradeReason;` → `{Binding TradeReason}`
 - Command: `[RelayCommand] private void SubmitTrade() { ... }` → `Command="{Binding SubmitTrade}"`
-- Navigation: `ShellViewModel.ActiveModule = Modules.Plan;`
+- Navigation: `NavigateCommand.Execute("Plan")` on `MainViewModel`
 
 **Database Access:**
 - Implement `IRepository<T>` pattern (see `IJournalRepository`)
@@ -220,4 +247,4 @@ All exceptions and key events logged via Serilog to daily files in `%LocalAppDat
 - **WebView2 errors:** Ensure WebView2 Runtime is installed (usually preinstalled on Windows 10/11)
 - **Database locked:** Close all instances of the app
 - **Settings not saving:** Verify DPAPI permissions (Windows user must have access to encryption keys)
-- **Module navigation broken:** Check `ShellViewModel.ActiveModule` and `MainWindow.xaml` switch statement
+- **Module navigation broken:** Check `MainViewModel.ActiveModule`, `ModuleStateMachine.CurrentState`, and the visibility bindings in `MainWindow.xaml`

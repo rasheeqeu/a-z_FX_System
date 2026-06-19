@@ -14,11 +14,18 @@ public partial class ReviewViewModel(IJournalRepository journalRepository) : Obs
     [ObservableProperty] private string topMistakes = "No mistakes recorded yet.";
     [ObservableProperty] private string nextImprovement = "Create one planned demo trade and review it.";
 
+    public int TotalLessons { get; private set; } = 44;
+    public double ProgressPercent => TotalLessons == 0 ? 0 : Math.Round((double)LessonsCompleted / TotalLessons * 100, 1);
+
     public async Task RefreshAsync(IEnumerable<LessonItemViewModel> lessons)
     {
         var entries = (await journalRepository.LoadAsync()).ToList();
         JournalCount = entries.Count;
-        LessonsCompleted = lessons.Count(x => x.State == LessonState.Completed || x.State == LessonState.Reviewed);
+        var lessonList = lessons.ToList();
+        TotalLessons = lessonList.Count > 0 ? lessonList.Count : 44;
+        LessonsCompleted = lessonList.Count(x => x.State == LessonState.Completed || x.State == LessonState.Reviewed);
+        OnPropertyChanged(nameof(TotalLessons));
+        OnPropertyChanged(nameof(ProgressPercent));
         NetProfitLoss = entries.Sum(x => x.ProfitLoss);
         WinRate = entries.Count == 0 ? 0 : Math.Round((decimal)entries.Count(x => x.ProfitLoss > 0) / entries.Count * 100m, 2);
         TopMistakes = BuildTopMistakes(entries);

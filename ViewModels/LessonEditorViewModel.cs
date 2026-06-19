@@ -171,6 +171,77 @@ public partial class LessonEditorViewModel(ILessonRepository lessonRepository) :
         Status = $"Reloaded {Items.Count} lessons from file.";
     }
 
+    [RelayCommand]
+    private void OpenFileLocation()
+    {
+        var folder = Path.GetDirectoryName(LessonsFile)!;
+        Directory.CreateDirectory(folder);
+        System.Diagnostics.Process.Start("explorer.exe", folder);
+    }
+
+    [RelayCommand]
+    private async Task UploadAsync()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import lessons file",
+            Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            CheckFileExists = true
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        var text = await File.ReadAllTextAsync(dlg.FileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(LessonsFile)!);
+        await File.WriteAllTextAsync(LessonsFile, text);
+        _sections = (await lessonRepository.LoadSectionsAsync()).ToList();
+        RebuildList();
+        SelectedItem = Items.FirstOrDefault();
+        Status = $"Imported {Items.Count} lessons from {Path.GetFileName(dlg.FileName)}.";
+    }
+
+    [RelayCommand]
+    private async Task DownloadAsync()
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save lessons file",
+            Filter = "Text files (*.txt)|*.txt",
+            FileName = "lessons.txt"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        if (File.Exists(LessonsFile))
+            File.Copy(LessonsFile, dlg.FileName, overwrite: true);
+        else
+            await SaveToFileAsync();
+
+        Status = $"Downloaded to {dlg.FileName}";
+    }
+
+    [RelayCommand]
+    private void InsertImage()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select image",
+            Filter = "Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp|All files (*.*)|*.*"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        var tag = $"\n![image]({dlg.FileName})";
+        EditContent += tag;
+        IsDirty = true;
+        Status = $"Image inserted: {Path.GetFileName(dlg.FileName)}";
+    }
+
+    [RelayCommand]
+    private void InsertLink()
+    {
+        EditContent += "\n[link text](https://example.com)";
+        IsDirty = true;
+        Status = "Link template inserted — edit the text and URL in the content box.";
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────
 
     private void RebuildList()

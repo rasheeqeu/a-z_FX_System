@@ -54,7 +54,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid Background="{StaticResource DS_BackgroundBrush}">
+    <Grid x:Name="RootGrid" Background="{StaticResource DS_BackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="52" />
             <RowDefinition Height="*" />
@@ -71,149 +71,237 @@
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
                     <TextBlock Text="{Binding LocalClock}" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="12,0" />
-                    <Button x:Name="SessionButton" Content="📈" Command="{Binding ToggleSessionPanelCommand}" Padding="8,5" Margin="4,0,8,0" Background="{StaticResource DS_PanelSurfaceBrush}" ToolTip="View Forex trading sessions" FontSize="16" />
-                    <Button Content="✎ Edit Lessons" Command="{Binding OpenLessonEditorCommand}" Padding="12,5" Margin="0,0,8,0" Background="{StaticResource DS_PanelSurfaceBrush}"/>
-                    <Button Content="Ask AI" Command="{Binding ExportAiReviewCommand}" Padding="12,5" />
-                    <Button Content="Back" Command="{Binding PreviousStepCommand}" Padding="10,5" />
-                    <Button Content="{Binding NextButtonText}" Command="{Binding NextStepCommand}" Padding="16,5" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
+                    <Button Content="Back" Command="{Binding PreviousStepCommand}" Padding="10,5"
+                            Visibility="{Binding IsTradingMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Button Content="{Binding NextButtonText}" Command="{Binding NextStepCommand}" Padding="16,5"
+                            Background="{StaticResource DS_AccentBrush}" Foreground="#111111"
+                            Visibility="{Binding IsTradingMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Forex Demo Learning Workspace" FontSize="16" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding ProgressText}" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="18,1,0,0" />
-                    <TextBlock Text="{Binding CurrentStepTitle}" Foreground="{StaticResource DS_AccentBrush}" Margin="10,1,0,0" />
+                    <!-- Hamburger menu button -->
+                    <Button Command="{Binding ToggleNavCommand}" Padding="8,5" Background="Transparent" BorderThickness="0"
+                            ToolTip="Navigation menu" Cursor="Hand">
+                        <TextBlock Text="☰" FontSize="18" Foreground="{StaticResource DS_PrimaryTextBrush}"/>
+                    </Button>
+                    <TextBlock Text="📊" FontSize="18" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    <TextBlock Text="{Binding ProgressText}" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="18,1,0,0"
+                               Visibility="{Binding IsTradingMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding CurrentStepTitle}" Foreground="{StaticResource DS_AccentBrush}" Margin="10,1,0,0"
+                               Visibility="{Binding IsTradingMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <!-- Session Panel Dropdown -->
-        <Popup IsOpen="{Binding IsSessionPanelOpen}"
-               Placement="Bottom"
-               PlacementTarget="{Binding ElementName=SessionButton}"
-               AllowsTransparency="True"
-               Focusable="False">
-            <Border Background="{StaticResource DS_SecondaryBgBrush}"
-                    BorderBrush="{StaticResource DS_PanelSurfaceBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6,6,6,6"
-                    Padding="12"
-                    Width="400">
-                <StackPanel>
-                    <!-- Header with Timezone Selector -->
-                    <DockPanel Margin="0,0,0,12">
-                        <TextBlock Text="Forex Market Time Zone" FontWeight="SemiBold" DockPanel.Dock="Left" VerticalAlignment="Center" />
-                        <ComboBox ItemsSource="{Binding AvailableTimezones}"
-                                  SelectedItem="{Binding SelectedTimezone, UpdateSourceTrigger=PropertyChanged}"
-                                  DockPanel.Dock="Right"
-                                  Width="150"
-                                  Padding="8,4"
-                                  Background="{StaticResource DS_PanelSurfaceBrush}"
-                                  Foreground="{StaticResource DS_SecondaryTextBrush}" />
-                    </DockPanel>
-
-                    <!-- Session List -->
-                    <ItemsControl ItemsSource="{Binding SessionsData}" Margin="0,0,0,12">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource DS_PanelSurfaceBrush}"
-                                        CornerRadius="4,4,4,4"
-                                        Padding="10,8"
-                                        Margin="0,0,0,6">
-                                    <StackPanel>
-                                        <DockPanel Margin="0,0,0,4">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" DockPanel.Dock="Left" />
-                                            <TextBlock Text="{Binding TimeUntilChangeDisplay}"
-                                                       Foreground="{StaticResource DS_SecondaryTextBrush}"
-                                                       FontSize="11"
-                                                       DockPanel.Dock="Right"
-                                                       TextAlignment="Right" />
-                                        </DockPanel>
-                                        <TextBlock Text="{Binding LocalOpen, StringFormat='Local: {0:HH:mm}'}" Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="11" />
-                                        <TextBlock Text="{Binding LocalClose, StringFormat='to {0:HH:mm}'}" Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="11" Margin="0,2,0,0" />
-                                        <TextBlock Text="{Binding UtcOpen, StringFormat='UTC: {0:HH:mm}'}" Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="10" Margin="0,2,0,0" />
-                                        <TextBlock FontSize="10"
-                                                   Margin="0,4,0,0"
-                                                   Foreground="{StaticResource DS_AccentBrush}"
-                                                   Visibility="{Binding IsCurrentlyOpen, Converter={StaticResource BoolToVisibilityConverter}}">
-                                            ✓ Currently Open
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Visual Timeline -->
-                    <TextBlock Text="24-Hour Timeline" FontWeight="SemiBold" Margin="0,0,0,8" FontSize="12" />
-                    <Border Background="{StaticResource DS_PanelSurfaceBrush}" CornerRadius="4,4,4,4" Padding="8" Margin="0,0,0,12">
-                        <StackPanel>
-                            <!-- Hour Markers -->
-                            <Grid Height="16" Margin="0,0,0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition />
-                                    <ColumnDefinition />
-                                    <ColumnDefinition />
-                                    <ColumnDefinition />
-                                    <ColumnDefinition />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="00:00" FontSize="8" Foreground="{StaticResource DS_SecondaryTextBrush}" />
-                                <TextBlock Text="06:00" Grid.Column="1" FontSize="8" Foreground="{StaticResource DS_SecondaryTextBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="12:00" Grid.Column="2" FontSize="8" Foreground="{StaticResource DS_SecondaryTextBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="18:00" Grid.Column="3" FontSize="8" Foreground="{StaticResource DS_SecondaryTextBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="24:00" Grid.Column="4" FontSize="8" Foreground="{StaticResource DS_SecondaryTextBrush}" HorizontalAlignment="Right" />
-                            </Grid>
-                            <!-- Session Bars -->
-                            <Canvas Height="60">
-                                <!-- Sydney Bar (22:00-07:00 UTC) -->
-                                <Rectangle Canvas.Left="183" Canvas.Top="4" Width="58" Height="10" Fill="#4CAF50" Opacity="0.7" ToolTip="Sydney: 22:00-07:00 UTC" />
-                                <!-- Tokyo Bar (00:00-09:00 UTC) -->
-                                <Rectangle Canvas.Left="0" Canvas.Top="16" Width="38" Height="10" Fill="#2196F3" Opacity="0.7" ToolTip="Tokyo: 00:00-09:00 UTC" />
-                                <!-- London Bar (08:00-17:00 UTC) -->
-                                <Rectangle Canvas.Left="53" Canvas.Top="28" Width="75" Height="10" Fill="#FF9800" Opacity="0.7" ToolTip="London: 08:00-17:00 UTC" />
-                                <!-- New York Bar (13:00-22:00 UTC) -->
-                                <Rectangle Canvas.Left="87" Canvas.Top="40" Width="75" Height="10" Fill="#E91E63" Opacity="0.7" ToolTip="New York: 13:00-22:00 UTC" />
-                                <!-- Current Time Marker -->
-                                <Line X1="150" Y1="0" X2="150" Y2="60" Stroke="{StaticResource DS_AccentBrush}" StrokeThickness="2" />
-                            </Canvas>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Overlap Info -->
-                    <TextBlock Text="London-New York Overlap: 13:00-17:00 UTC"
-                               FontSize="11"
-                               Foreground="{StaticResource DS_AccentBrush}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-        </Popup>
-
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" x:Name="ContentGrid">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="0" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="260" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="{StaticResource DS_BackgroundBrush}" Padding="10" Visibility="Collapsed">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Top">
-                        <TextBlock Text="Practice Flow" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="8,4,0,10" />
-                        <Button Style="{StaticResource StepButton}" Content="1. Choose Lesson" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.ChooseLesson}" />
-                        <Button Style="{StaticResource StepButton}" Content="2. Evaluate" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.EvaluateUnderstanding}" />
-                        <Button Style="{StaticResource StepButton}" Content="3. Trade Idea" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.PlanSetup}" />
-                        <Button Style="{StaticResource StepButton}" Content="4. Prices" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.EnterPrices}" />
-                        <Button Style="{StaticResource StepButton}" Content="5. Risk Check" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.CheckRisk}" />
-                        <Button Style="{StaticResource StepButton}" Content="6. Screenshot" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.CaptureScreenshot}" />
-                        <Button Style="{StaticResource StepButton}" Content="7. XM Demo" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.ManualExecution}" />
-                        <Button Style="{StaticResource StepButton}" Content="8. Journal" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.JournalReview}" />
-                    </StackPanel>
-                    <StackPanel DockPanel.Dock="Bottom">
-                        <TextBlock Text="Rule" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="8,0,0,4" />
-                        <TextBlock Text="Do not place a demo trade until risk, checklist, and screenshot are complete." TextWrapping="Wrap" Margin="8,0" />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
+            <!-- ═══════════════════════════════════════════════════════
+                 LEARNING MODE
+            ════════════════════════════════════════════════════════════ -->
+            <Grid Grid.Column="0" Visibility="{Binding IsLearningMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <Grid Grid.Column="1">
+                <!-- Progress bar -->
+                <Border Grid.Row="0" Background="{StaticResource DS_SecondaryBgBrush}" Padding="16,10" Margin="8,8,8,0" CornerRadius="6,6,6,6">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="12">
+                                <Run Text="{Binding LessonsCompleted, Mode=OneWay}"/>
+                                <Run Text=" / "/>
+                                <Run Text="{Binding TotalLessons, Mode=OneWay}"/>
+                                <Run Text=" lessons completed"/>
+                            </TextBlock>
+                            <TextBlock Text="Course Progress" FontWeight="SemiBold" FontSize="12"/>
+                        </DockPanel>
+                        <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="8" Background="{StaticResource DS_BorderBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Catalogue / Study / Journal tabs -->
+                <Border Grid.Row="1" Background="{StaticResource DS_SecondaryBgBrush}" Padding="8,6" Margin="8,4,8,0" CornerRadius="6,6,6,6">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="📚 Catalogue" Command="{Binding SetLearningSubViewCommand}" CommandParameter="Catalogue" Padding="14,6">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding LearningSubView}" Value="Catalogue">
+                                            <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                                            <Setter Property="Foreground" Value="#111111"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="📖 Study" Command="{Binding SetLearningSubViewCommand}" CommandParameter="Study" Padding="14,6" Margin="4,0,0,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding LearningSubView}" Value="Study">
+                                            <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                                            <Setter Property="Foreground" Value="#111111"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Catalogue sub-view -->
+                <Border Grid.Row="2" Style="{StaticResource Panel}"
+                        Visibility="{Binding LearningSubView, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Catalogue}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Learning.Sections}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,20">
+                                        <!-- Section header -->
+                                        <Border Background="{StaticResource DS_PanelSurfaceBrush}" CornerRadius="6,6,6,6" Padding="14,10" Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource DS_PrimaryTextBrush}"/>
+                                        </Border>
+                                        <!-- Lessons in this section -->
+                                        <ItemsControl ItemsSource="{Binding Lessons}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button HorizontalContentAlignment="Stretch"
+                                                            Padding="0" Margin="0,1,0,0" Background="Transparent" BorderThickness="0"
+                                                            Command="{Binding DataContext.OpenLessonStudyCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Cursor="Hand">
+                                                        <Border Background="{StaticResource DS_SecondaryBgBrush}" CornerRadius="4,4,4,4"
+                                                                Padding="14,10" Margin="0,1,0,0">
+                                                            <DockPanel>
+                                                                <!-- State badge -->
+                                                                <Border DockPanel.Dock="Right" CornerRadius="4,4,4,4" Padding="6,3" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                                    <Border.Style>
+                                                                        <Style TargetType="Border">
+                                                                            <Setter Property="Background" Value="Transparent"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding State}" Value="Completed">
+                                                                                    <Setter Property="Background" Value="#1A7A3A"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding State}" Value="Reviewed">
+                                                                                    <Setter Property="Background" Value="#1A5A7A"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding State}" Value="DemoApplied">
+                                                                                    <Setter Property="Background" Value="#5A5A1A"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding State}" Value="Practicing">
+                                                                                    <Setter Property="Background" Value="#3A3A1A"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Border.Style>
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource DS_SecondaryTextBrush}">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Text" Value="Not started"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding State}" Value="Studying"><Setter Property="Text" Value="Studying"/></DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding State}" Value="Practicing"><Setter Property="Text" Value="✓ Saved"/></DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding State}" Value="DemoApplied"><Setter Property="Text" Value="✓ Evaluated"/></DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding State}" Value="Reviewed"><Setter Property="Text" Value="✓ Reviewed"/></DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding State}" Value="Completed"><Setter Property="Text" Value="✓ Complete"/></DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                </Border>
+                                                                <!-- Duration -->
+                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Duration}"
+                                                                           Foreground="{StaticResource DS_SecondaryTextBrush}" FontSize="11"
+                                                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                                <!-- Title -->
+                                                                <TextBlock Text="{Binding DisplayTitle}" FontSize="13"
+                                                                           Foreground="{StaticResource DS_PrimaryTextBrush}"
+                                                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                                            </DockPanel>
+                                                        </Border>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Study sub-view -->
+                <Grid Grid.Row="2" Visibility="{Binding LearningSubView, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Study}">
+                    <!-- Choose Lesson -->
+                    <Border Style="{StaticResource Panel}" Visibility="{Binding CurrentStep, Converter={StaticResource StringEqualsConverter}, ConverterParameter=ChooseLesson}">
+                        <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding Learning.LessonPosition}" Foreground="{StaticResource DS_SecondaryTextBrush}" />
+                            <TextBlock Text="{Binding Learning.SelectedLesson.DisplayTitle, TargetNullValue='Select a lesson'}" Style="{StaticResource DS_Title22}" Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding Learning.SelectedLesson.Lesson.Summary}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                            <Border Background="{StaticResource DS_PanelSurfaceBrush}" CornerRadius="6,6,6,6" Padding="12" Margin="0,18,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Progress" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Learning.LearningGateMessage}" TextWrapping="Wrap" Foreground="{StaticResource DS_SecondaryTextBrush}" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="Write one thing you understand from this lesson" Style="{StaticResource DS_SectionTitle16}" Margin="0,28,0,8" />
+                            <TextBox Text="{Binding Learning.PracticeAnswer, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="150" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,14,0,0">
+                                <Button Content="Previous Lesson" Command="{Binding Learning.PreviousLessonCommand}" />
+                                <Button Content="Next Lesson" Command="{Binding Learning.NextLessonCommand}" />
+                                <Button Content="Save Understanding" Command="{Binding Learning.SavePracticeCommand}" />
+                                <Button Content="Evaluate →" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.EvaluateUnderstanding}"
+                                        IsEnabled="{Binding CanEvaluate}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Evaluate Understanding -->
+                    <Border Style="{StaticResource Panel}" Visibility="{Binding CurrentStep, Converter={StaticResource StringEqualsConverter}, ConverterParameter=EvaluateUnderstanding}">
+                        <ScrollViewer>
+                            <StackPanel MaxWidth="760" HorizontalAlignment="Left">
+                                <TextBlock Text="{Binding Learning.SelectedLesson.DisplayTitle, TargetNullValue='Select a lesson'}" Style="{StaticResource DS_Title22}" />
+                                <TextBlock Text="Evaluation: use any AI manually" Style="{StaticResource DS_SectionTitle16}" Margin="0,18,0,8" />
+                                <TextBlock Text="Write your explanation, copy the evaluation prompt, paste it into any AI, then paste the returned JSON here." TextWrapping="Wrap" Foreground="{StaticResource DS_SecondaryTextBrush}" />
+                                <TextBlock Text="Your explanation" Style="{StaticResource FieldLabel}" Margin="0,18,0,3" />
+                                <TextBox Text="{Binding Learning.EvaluationAnswer, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="110" TextWrapping="Wrap" />
+                                <WrapPanel Margin="0,12,0,0">
+                                    <Button Content="Copy Prompt for AI" Command="{Binding Learning.CopyEvaluationPromptCommand}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
+                                    <Button Content="Local Check" Command="{Binding Learning.EvaluateUnderstandingCommand}" />
+                                    <Button Content="← Back to Study" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.ChooseLesson}" />
+                                </WrapPanel>
+                                <TextBlock Text="Paste AI JSON result" Style="{StaticResource FieldLabel}" Margin="0,16,0,3" />
+                                <TextBox Text="{Binding Learning.EvaluationJson, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="120" TextWrapping="Wrap" />
+                                <Border Background="{StaticResource DS_PanelSurfaceBrush}" CornerRadius="6,6,6,6" Padding="12" Margin="0,14,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Learning.EvaluationScore, StringFormat=Score: {0}/100}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Learning.EvaluationFeedback}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Button Content="Parse AI Result" Command="{Binding Learning.ParseEvaluationResultCommand}" />
+                                    <Button Content="✓ Lesson Complete" Command="{Binding GoToStepCommand}" CommandParameter="{x:Static shell:GuidedStep.ChooseLesson}"
+                                            IsEnabled="{Binding CanApply}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+
+            </Grid>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 TRADING MODE
+            ════════════════════════════════════════════════════════════ -->
+            <Grid Grid.Column="0" Visibility="{Binding IsTradingMode, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Border Style="{StaticResource Panel}" Visibility="{Binding CurrentStep, Converter={StaticResource StringEqualsConverter}, ConverterParameter=ChooseLesson}">
                     <StackPanel MaxWidth="720" HorizontalAlignment="Left">
                         <TextBlock Text="{Binding Learning.LessonPosition}" Foreground="{StaticResource DS_SecondaryTextBrush}" />
@@ -231,7 +319,7 @@
                             <Button Content="Previous Lesson" Command="{Binding Learning.PreviousLessonCommand}" />
                             <Button Content="Next Lesson" Command="{Binding Learning.NextLessonCommand}" />
                             <Button Content="Save Understanding" Command="{Binding Learning.SavePracticeCommand}" />
-                            <Button Content="Evaluate Understanding" Command="{Binding NextStepCommand}" IsEnabled="{Binding Learning.CanEvaluateSelectedLesson}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
+                            <Button Content="Evaluate Understanding" Command="{Binding NextStepCommand}" IsEnabled="{Binding CanEvaluate}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
                         </WrapPanel>
                     </StackPanel>
                 </Border>
@@ -258,7 +346,7 @@
                             </Border>
                             <WrapPanel Margin="0,14,0,0">
                                 <Button Content="Parse AI Result" Command="{Binding Learning.ParseEvaluationResultCommand}" />
-                                <Button Content="Start Trade Idea" Command="{Binding NextStepCommand}" IsEnabled="{Binding Learning.CanApplySelectedLesson}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
+                                <Button Content="Start Trade Idea" Command="{Binding NextStepCommand}" IsEnabled="{Binding CanApply}" Background="{StaticResource DS_AccentBrush}" Foreground="#111111" />
                             </WrapPanel>
                         </StackPanel>
                     </ScrollViewer>
@@ -466,7 +554,134 @@
                 </Border>
             </Grid>
 
-            <Border Grid.Column="2" Style="{StaticResource Panel}">
+            <!-- ═══════════════════════════════════════════════════════
+                 CHARTS MODE
+            ════════════════════════════════════════════════════════════ -->
+            <Grid Grid.Column="0" Grid.ColumnSpan="2" Visibility="{Binding IsChartsMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Shortcut bar -->
+                <Border Grid.Row="0" Background="{StaticResource DS_SecondaryBgBrush}" Padding="8,6" Margin="8,8,8,0" CornerRadius="6,6,6,6">
+                    <DockPanel>
+                        <!-- URL bar -->
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <TextBox Text="{Binding Broker.AddressBarUrl, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="260" Padding="8,5" VerticalContentAlignment="Center"
+                                     Background="{StaticResource DS_PanelSurfaceBrush}"
+                                     Foreground="{StaticResource DS_PrimaryTextBrush}">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding Broker.NavigateCommand}"/>
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <Button Content="Go" Command="{Binding Broker.NavigateCommand}" Padding="10,5" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <!-- Site shortcuts -->
+                        <WrapPanel VerticalAlignment="Center">
+                            <Button Padding="10,5" Margin="0,0,4,0" ToolTip="TradingView Charts">
+                                <Button.Command>
+                                    <Binding Path="Broker.OpenBookmarkCommand"/>
+                                </Button.Command>
+                                <Button.CommandParameter>
+                                    <models:Bookmark xmlns:models="clr-namespace:ForexTradingWorkspace.Models" Name="TradingView" Url="https://www.tradingview.com/chart/"/>
+                                </Button.CommandParameter>
+                                <TextBlock Text="📊 TradingView"/>
+                            </Button>
+                            <Button Padding="10,5" Margin="0,0,4,0" ToolTip="Forex Factory Calendar">
+                                <Button.Command>
+                                    <Binding Path="Broker.OpenBookmarkCommand"/>
+                                </Button.Command>
+                                <Button.CommandParameter>
+                                    <models:Bookmark xmlns:models="clr-namespace:ForexTradingWorkspace.Models" Name="Forex Factory" Url="https://www.forexfactory.com/calendar"/>
+                                </Button.CommandParameter>
+                                <TextBlock Text="📅 Forex Factory"/>
+                            </Button>
+                            <Button Padding="10,5" Margin="0,0,4,0" ToolTip="Investing.com Economic Calendar">
+                                <Button.Command>
+                                    <Binding Path="Broker.OpenBookmarkCommand"/>
+                                </Button.Command>
+                                <Button.CommandParameter>
+                                    <models:Bookmark xmlns:models="clr-namespace:ForexTradingWorkspace.Models" Name="Investing.com" Url="https://www.investing.com/economic-calendar/"/>
+                                </Button.CommandParameter>
+                                <TextBlock Text="📈 Investing.com"/>
+                            </Button>
+                            <Button Padding="10,5" Margin="0,0,4,0" ToolTip="XM Demo Broker">
+                                <Button.Command>
+                                    <Binding Path="Broker.OpenBookmarkCommand"/>
+                                </Button.Command>
+                                <Button.CommandParameter>
+                                    <models:Bookmark xmlns:models="clr-namespace:ForexTradingWorkspace.Models" Name="XM Demo" Url="https://www.xm.com/mt5-download"/>
+                                </Button.CommandParameter>
+                                <TextBlock Text="🏦 XM Demo"/>
+                            </Button>
+                        </WrapPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- WebView2 browser -->
+                <wv2:WebView2 Grid.Row="1" x:Name="ChartsWebView"
+                              Source="{Binding Broker.ActiveUrl, Converter={StaticResource UrlToUriConverter}}"
+                              Margin="8,4,8,8"/>
+            </Grid>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 JOURNAL MODE
+            ════════════════════════════════════════════════════════════ -->
+            <Grid Grid.Column="0" Grid.ColumnSpan="2" Visibility="{Binding IsJournalMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Style="{StaticResource Panel}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="📋 Journal" Style="{StaticResource DS_Title22}" Margin="0,0,0,12" />
+                            <DataGrid ItemsSource="{Binding Journal.Entries}" SelectedItem="{Binding Journal.SelectedEntry}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Pair" Binding="{Binding Plan.Pair}" Width="80"/>
+                                    <DataGridTextColumn Header="P/L" Binding="{Binding ProfitLoss}" Width="70"/>
+                                    <DataGridTextColumn Header="Date" Binding="{Binding CreatedAtUtc, StringFormat=dd MMM}" Width="70"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                        <ScrollViewer Grid.Column="1" Margin="18,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Journal.SelectedEntry.Plan.Pair, StringFormat='Trade: {0}', TargetNullValue='Select a trade'}" Style="{StaticResource DS_Title22}" />
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="Lesson Learned" />
+                                <TextBlock Text="{Binding Journal.SelectedEntry.LessonLearned}" TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="Mistakes" />
+                                <TextBlock Text="{Binding Journal.MistakeTagsText}" TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="Review Notes" />
+                                <TextBlock Text="{Binding Journal.SelectedEntry.ReviewNotes}" TextWrapping="Wrap" />
+                                <TextBlock Text="Screenshots" Style="{StaticResource DS_SectionTitle16}" Margin="0,18,0,8" />
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                    <ItemsControl ItemsSource="{Binding Journal.SelectedEntry.Screenshots}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{StaticResource DS_PanelSurfaceBrush}" CornerRadius="6,6,6,6" Padding="8" Margin="0,0,10,0" Width="190">
+                                                    <StackPanel>
+                                                        <Image Source="{Binding FilePath}" Width="174" Height="98" Stretch="UniformToFill" />
+                                                        <TextBlock Text="{Binding CaptureType}" FontWeight="SemiBold" Margin="0,8,0,2" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Border Grid.Column="1" Style="{StaticResource Panel}"
+                    Visibility="{Binding IsLearningMode, Converter={StaticResource BoolToVisibilityConverter}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <TextBlock Text="Need help?" Style="{StaticResource DS_SectionTitle16}" />
@@ -483,7 +698,160 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
+
         </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════
+             NAV DRAWER POPUP — own HWND, always above WebView2
+        ════════════════════════════════════════════════════════════ -->
+        <Popup x:Name="NavDrawerPopup"
+               IsOpen="{Binding IsNavOpen}"
+               AllowsTransparency="True"
+               Placement="Relative"
+               PlacementTarget="{Binding ElementName=RootGrid}"
+               VerticalOffset="52"
+               HorizontalOffset="0"
+               StaysOpen="False"
+               Closed="NavDrawerPopup_Closed">
+                <Border Width="220"
+                        Height="{Binding ActualHeight, ElementName=ContentGrid}"
+                        Background="{StaticResource DS_SecondaryBgBrush}"
+                        BorderBrush="{StaticResource DS_BorderBrush}" BorderThickness="0,0,1,0"
+                        Effect="{x:Null}">
+                    <StackPanel Margin="0,12,0,12">
+                        <TextBlock Text="NAVIGATE" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource DS_SecondaryTextBrush}"
+                                   Margin="16,0,0,12"/>
+
+                        <Button Command="{Binding SwitchToLearningCommand}"
+                                HorizontalContentAlignment="Left"
+                                Padding="16,12" BorderThickness="0" Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLearningMode}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📚" FontSize="16" Margin="0,0,10,0"/>
+                                <TextBlock Text="Learning" FontSize="14"
+                                           Foreground="{StaticResource DS_PrimaryTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding SwitchToTradingCommand}"
+                                HorizontalContentAlignment="Left"
+                                Padding="16,12" BorderThickness="0" Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsTradingMode}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📈" FontSize="16" Margin="0,0,10,0"/>
+                                <TextBlock Text="Trading" FontSize="14"
+                                           Foreground="{StaticResource DS_PrimaryTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding SwitchToChartsCommand}"
+                                HorizontalContentAlignment="Left"
+                                Padding="16,12" BorderThickness="0" Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChartsMode}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🌐" FontSize="16" Margin="0,0,10,0"/>
+                                <TextBlock Text="Charts" FontSize="14"
+                                           Foreground="{StaticResource DS_PrimaryTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding SwitchToJournalCommand}"
+                                HorizontalContentAlignment="Left"
+                                Padding="16,12" BorderThickness="0" Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsJournalMode}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource DS_AccentBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📋" FontSize="16" Margin="0,0,10,0"/>
+                                <TextBlock Text="Journal" FontSize="14"
+                                           Foreground="{StaticResource DS_PrimaryTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Separator Margin="16,8" Background="{StaticResource DS_BorderBrush}"/>
+
+                        <Button Command="{Binding OpenLessonEditorCommand}"
+                                HorizontalContentAlignment="Left"
+                                Padding="16,12" Background="Transparent" BorderThickness="0"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✎" FontSize="14" Margin="0,0,10,0"/>
+                                <TextBlock Text="Edit Lessons" FontSize="14"
+                                           Foreground="{StaticResource DS_PrimaryTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Separator Margin="16,8" Background="{StaticResource DS_BorderBrush}"/>
+
+                        <!-- Debug toggle in drawer -->
+                        <ToggleButton IsChecked="{Binding IsDebugMode}" HorizontalAlignment="Left"
+                                      Margin="8,4" Padding="8,8" BorderThickness="0" Cursor="Hand"
+                                      ToolTip="Skip all evaluation gates">
+                            <ToggleButton.Style>
+                                <Style TargetType="ToggleButton">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="🔒" FontSize="14" Margin="0,0,8,0"/>
+                                                <TextBlock Text="Normal mode" FontSize="13" Foreground="{StaticResource DS_SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter Property="Content">
+                                                <Setter.Value>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="🔓" FontSize="14" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="Debug ON" FontSize="13" Foreground="#FFAAAA" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Setter Property="Background" Value="#5A1A1A"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ToggleButton.Style>
+                        </ToggleButton>
+                    </StackPanel>
+                </Border>
+        </Popup>
 
         <Border x:Name="ProgressOverlay" Grid.RowSpan="2" Background="#00000060" Visibility="Collapsed" Panel.ZIndex="20" Width="320" Height="110" CornerRadius="6,6,6,6">
             <StackPanel VerticalAlignment="Center" Margin="16">

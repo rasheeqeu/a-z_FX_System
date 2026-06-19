@@ -52,7 +52,6 @@ public partial class App : System.Windows.Application
                     services.AddSingleton<IWorkspaceLayoutService, WorkspaceLayoutService>();
                     services.AddSingleton<IScreenshotService, ScreenshotService>();
                     services.AddSingleton<INotificationService, DesktopNotificationService>();
-                    services.AddSingleton<SessionClockService>();
                     services.AddSingleton<IWebView2BridgeService, WebView2BridgeService>();
                     services.AddSingleton<IAuditService, AuditService>();
                     services.AddSingleton<IStateService, StateService>();

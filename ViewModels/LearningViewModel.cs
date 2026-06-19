@@ -79,6 +79,14 @@ public partial class LearningViewModel(
     }
 
     [RelayCommand]
+    private void SelectLesson(LessonItemViewModel lesson)
+    {
+        SelectedLesson = lesson;
+        Status = lesson.DisplayTitle;
+        RefreshLearningGate();
+    }
+
+    [RelayCommand]
     private void PreviousLesson()
     {
         MoveLesson(-1);

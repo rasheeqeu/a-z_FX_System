@@ -25,7 +25,13 @@ public partial class MainWindow : Window
     {
         EnsureWindowIsVisible();
         await BrokerWebView.EnsureCoreWebView2Async();
+        await ChartsWebView.EnsureCoreWebView2Async();
         HookFeedback();
+    }
+
+    private void NavDrawerPopup_Closed(object sender, EventArgs e)
+    {
+        _viewModel.IsNavOpen = false;
     }
 
     private void EnsureWindowIsVisible()

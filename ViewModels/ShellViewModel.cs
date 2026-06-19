@@ -19,8 +19,7 @@ public partial class ShellViewModel(
     ReviewViewModel review,
     SettingsViewModel settings,
     IAiReviewExportService aiReviewExportService,
-    Func<LessonEditorWindow> lessonEditorFactory,
-    SessionClockService sessionClockService) : ObservableObject
+    Func<LessonEditorWindow> lessonEditorFactory) : ObservableObject
 {
     [ObservableProperty] private NavigationState activeSection = NavigationState.Learn;
     [ObservableProperty] private LayoutState layoutState = LayoutState.Normal;
@@ -28,10 +27,37 @@ public partial class ShellViewModel(
     [ObservableProperty] private string localClock = "";
     [ObservableProperty] private string status = "Ready";
     [ObservableProperty] private string aiReviewQuestion = "Review this demo trade plan. What am I missing?";
-    [ObservableProperty] private bool isSessionPanelOpen = false;
-    [ObservableProperty] private ObservableCollection<SessionStatus> sessionsData = new();
-    [ObservableProperty] private string selectedTimezone = "Local";
-    [ObservableProperty] private ObservableCollection<string> availableTimezones = new();
+    [ObservableProperty] private bool isDebugMode = false;
+    [ObservableProperty] private bool isNavOpen = false;
+    [ObservableProperty] private AppMode appMode = AppMode.Learning;
+    [ObservableProperty] private string learningSubView = "Catalogue";
+
+    public bool IsLearningMode => AppMode == AppMode.Learning;
+    public bool IsTradingMode  => AppMode == AppMode.Trading;
+    public bool IsChartsMode   => AppMode == AppMode.Charts;
+    public bool IsJournalMode  => AppMode == AppMode.Journal;
+
+    partial void OnAppModeChanged(AppMode value)
+    {
+        OnPropertyChanged(nameof(IsLearningMode));
+        OnPropertyChanged(nameof(IsTradingMode));
+        OnPropertyChanged(nameof(IsChartsMode));
+        OnPropertyChanged(nameof(IsJournalMode));
+    }
+
+    // Progress bar pass-throughs (sourced from ReviewViewModel)
+    public int LessonsCompleted  => Review.LessonsCompleted;
+    public int TotalLessons      => Review.TotalLessons;
+    public double ProgressPercent => Review.ProgressPercent;
+
+    public bool CanEvaluate => IsDebugMode || Learning.CanEvaluateSelectedLesson;
+    public bool CanApply   => IsDebugMode || Learning.CanApplySelectedLesson;
+
+    partial void OnIsDebugModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanEvaluate));
+        OnPropertyChanged(nameof(CanApply));
+    }
 
     private readonly System.Windows.Threading.DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
@@ -87,13 +113,6 @@ public partial class ShellViewModel(
         await Journal.InitializeAsync();
         await RefreshReviewAsync();
 
-        // Initialize timezones
-        AvailableTimezones.Add("Local");
-        AvailableTimezones.Add("Dubai (GMT +4)");
-        AvailableTimezones.Add("Kolkata (GMT +5:30)");
-        AvailableTimezones.Add("London (GMT +0)");
-        AvailableTimezones.Add("New York (GMT -5)");
-
         UpdateClock();
         _clockTimer.Tick += (_, _) => UpdateClock();
         _clockTimer.Start();
@@ -101,11 +120,15 @@ public partial class ShellViewModel(
         // Auto-advance hooks
         Learning.UnderstandingSaved += async () =>
         {
+            await RefreshReviewAsync();
+            if (AppMode == AppMode.Learning) return; // stay in learning mode
             if (CurrentStep == GuidedStep.ChooseLesson)
                 await GoToStep(GuidedStep.EvaluateUnderstanding);
         };
         Learning.EvaluationPassed += async () =>
         {
+            await RefreshReviewAsync();
+            if (AppMode == AppMode.Learning) return; // stay in learning mode
             if (CurrentStep == GuidedStep.EvaluateUnderstanding)
             {
                 Planner.StartFromLesson(Learning.SelectedLesson?.Id);
@@ -198,16 +221,19 @@ public partial class ShellViewModel(
             return;
         }
 
-        if (CurrentStep == GuidedStep.ChooseLesson && !Learning.CanEvaluateSelectedLesson)
+        if (!IsDebugMode)
         {
-            Status = Learning.LearningGateMessage;
-            return;
-        }
+            if (CurrentStep == GuidedStep.ChooseLesson && !Learning.CanEvaluateSelectedLesson)
+            {
+                Status = Learning.LearningGateMessage;
+                return;
+            }
 
-        if (CurrentStep == GuidedStep.EvaluateUnderstanding && !Learning.CanApplySelectedLesson)
-        {
-            Status = "Pass the understanding evaluation before creating a trade idea.";
-            return;
+            if (CurrentStep == GuidedStep.EvaluateUnderstanding && !Learning.CanApplySelectedLesson)
+            {
+                Status = "Pass the understanding evaluation before creating a trade idea.";
+                return;
+            }
         }
 
         var next = CurrentStep == GuidedStep.JournalReview
@@ -260,6 +286,68 @@ public partial class ShellViewModel(
     }
 
     [RelayCommand]
+    private void SwitchToLearning()
+    {
+        AppMode = AppMode.Learning;
+        IsNavOpen = false;
+    }
+
+    [RelayCommand]
+    private void SwitchToTrading()
+    {
+        AppMode = AppMode.Trading;
+        IsNavOpen = false;
+        if (CurrentStep < GuidedStep.PlanSetup)
+            CurrentStep = GuidedStep.PlanSetup;
+    }
+
+    [RelayCommand]
+    private void SwitchToCharts()
+    {
+        AppMode = AppMode.Charts;
+        IsNavOpen = false;
+    }
+
+    [RelayCommand]
+    private async Task SwitchToJournal()
+    {
+        AppMode = AppMode.Journal;
+        IsNavOpen = false;
+        await Journal.InitializeAsync();
+    }
+
+    [RelayCommand]
+    private void SetLearningSubView(string view) => LearningSubView = view;
+
+    [RelayCommand]
+    private void OpenLessonStudy(LessonItemViewModel lesson)
+    {
+        Learning.SelectLessonCommand.Execute(lesson);
+        LearningSubView = "Study";
+        CurrentStep = GuidedStep.ChooseLesson;
+    }
+
+    [RelayCommand]
+    private void ToggleNav() => IsNavOpen = !IsNavOpen;
+
+    [RelayCommand]
+    private void CloseNav() => IsNavOpen = false;
+
+    [RelayCommand]
+    private async Task NavGoToDashboard()
+    {
+        IsNavOpen = false;
+        await GoToStep(GuidedStep.ChooseLesson);
+    }
+
+    [RelayCommand]
+    private async Task NavGoToTrade()
+    {
+        IsNavOpen = false;
+        await GoToStep(GuidedStep.ManualExecution);
+    }
+
+    [RelayCommand]
     private void OpenLessonEditor()
     {
         var window = lessonEditorFactory();
@@ -270,18 +358,6 @@ public partial class ShellViewModel(
     private void ToggleAssistant()
     {
         LayoutState = LayoutState == LayoutState.AssistantCollapsed ? LayoutState.Normal : LayoutState.AssistantCollapsed;
-    }
-
-    [RelayCommand]
-    private void ToggleSessionPanel()
-    {
-        IsSessionPanelOpen = !IsSessionPanelOpen;
-    }
-
-    [RelayCommand]
-    private void OnTimezoneChanged()
-    {
-        UpdateSessionStatus();
     }
 
     [RelayCommand]
@@ -313,83 +389,13 @@ public partial class ShellViewModel(
     private async Task RefreshReviewAsync()
     {
         await Review.RefreshAsync(Learning.Sections.SelectMany(x => x.Lessons));
+        OnPropertyChanged(nameof(LessonsCompleted));
+        OnPropertyChanged(nameof(TotalLessons));
+        OnPropertyChanged(nameof(ProgressPercent));
     }
 
     private void UpdateClock()
     {
         LocalClock = DateTime.Now.ToString("ddd dd MMM HH:mm:ss");
-        UpdateSessionStatus();
-    }
-
-    private void UpdateSessionStatus()
-    {
-        var utcNow = DateTime.UtcNow;
-        var sessionsStatus = sessionClockService.GetAllSessionsStatus(utcNow);
-        var localTimes = sessionClockService.GetAllSessionsLocalTimes();
-
-        // Session colors for each market
-        var sessionColors = new[] { "#2196F3", "#E91E63", "#FF9800", "#4CAF50" };
-
-        // Parse timezone offset
-        var (tzOffsetHours, tzOffsetMinutes) = GetTimezoneOffset(SelectedTimezone);
-
-        // Build updated sessions list
-        var updated = new List<SessionStatus>();
-        for (int i = 0; i < sessionClockService.Sessions.Count; i++)
-        {
-            var (name, openUtc, closeUtc, isOpen, timeUntil) = sessionsStatus[i];
-            var (_, localOpen, localClose) = localTimes[i];
-
-            updated.Add(new SessionStatus
-            {
-                Name = name,
-                SessionColor = sessionColors[i],
-                UtcOpen = openUtc,
-                UtcClose = closeUtc,
-                LocalOpen = localOpen,
-                LocalClose = localClose,
-                IsCurrentlyOpen = isOpen,
-                TimeUntilChange = timeUntil
-            });
-        }
-
-        // Update collection
-        if (SessionsData.Count == 0)
-        {
-            foreach (var session in updated)
-            {
-                SessionsData.Add(session);
-            }
-        }
-        else
-        {
-            for (int i = 0; i < updated.Count; i++)
-            {
-                SessionsData[i] = updated[i];
-            }
-        }
-    }
-
-    private (int hours, int minutes) GetTimezoneOffset(string timezone)
-    {
-        return timezone switch
-        {
-            "Dubai (GMT +4)" => (4, 0),
-            "Kolkata (GMT +5:30)" => (5, 30),
-            "London (GMT +0)" => (0, 0),
-            "New York (GMT -5)" => (-5, 0),
-            _ => GetLocalTimezoneOffset()
-        };
-    }
-
-    private (int hours, int minutes) GetLocalTimezoneOffset()
-    {
-        var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
-        return ((int)offset.TotalHours, offset.Minutes);
-    }
-
-    partial void OnSelectedTimezoneChanged(string value)
-    {
-        UpdateSessionStatus();
     }
 }

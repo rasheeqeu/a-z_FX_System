@@ -7,7 +7,8 @@ namespace ForexTradingWorkspace.ViewModels;
 
 public partial class BrokerPortalViewModel : ObservableObject
 {
-    [ObservableProperty] private string activeUrl = "https://www.xm.ae/";
+    [ObservableProperty] private string activeUrl = "https://www.tradingview.com/chart/";
+    [ObservableProperty] private string addressBarUrl = "https://www.tradingview.com/chart/";
     [ObservableProperty] private string status = "Manual XM.AE demo execution. This app does not place trades.";
 
     public ObservableCollection<Bookmark> Bookmarks { get; } =
@@ -23,8 +24,19 @@ public partial class BrokerPortalViewModel : ObservableObject
     {
         if (bookmark is null) return;
         ActiveUrl = NormalizeUrl(bookmark.Url);
+        AddressBarUrl = ActiveUrl;
         Status = $"Opened {bookmark.Name}";
     }
+
+    [RelayCommand]
+    private void Navigate()
+    {
+        if (string.IsNullOrWhiteSpace(AddressBarUrl)) return;
+        ActiveUrl = NormalizeUrl(AddressBarUrl);
+        AddressBarUrl = ActiveUrl;
+    }
+
+    partial void OnAddressBarUrlChanged(string value) { /* user typing — navigate on Enter or Go button */ }
 
     private static string NormalizeUrl(string url)
     {
