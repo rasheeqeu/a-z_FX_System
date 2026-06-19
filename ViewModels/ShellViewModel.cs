@@ -31,6 +31,7 @@ public partial class ShellViewModel(
     [ObservableProperty] private bool isNavOpen = false;
     [ObservableProperty] private AppMode appMode = AppMode.Learning;
     [ObservableProperty] private string learningSubView = "Catalogue";
+    [ObservableProperty] private string lessonDetailTab = "Notes";
 
     public bool IsLearningMode => AppMode == AppMode.Learning;
     public bool IsTradingMode  => AppMode == AppMode.Trading;
@@ -320,10 +321,14 @@ public partial class ShellViewModel(
     private void SetLearningSubView(string view) => LearningSubView = view;
 
     [RelayCommand]
+    private void SetLessonDetailTab(string tab) => LessonDetailTab = tab;
+
+    [RelayCommand]
     private void OpenLessonStudy(LessonItemViewModel lesson)
     {
         Learning.SelectLessonCommand.Execute(lesson);
-        LearningSubView = "Study";
+        LearningSubView = "Lesson";
+        LessonDetailTab = "Notes";
         CurrentStep = GuidedStep.ChooseLesson;
     }
 
