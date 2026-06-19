@@ -352,8 +352,7 @@
                                                                             <Setter Property="BorderThickness" Value="3,0,0,0"/>
                                                                             <Setter Property="BorderBrush" Value="Transparent"/>
                                                                             <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding DataContext.Learning.SelectedLesson, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                                             Value="{Binding}">
+                                                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                                                     <Setter Property="Background" Value="{StaticResource DS_PanelSurfaceBrush}"/>
                                                                                     <Setter Property="BorderBrush" Value="{StaticResource DS_AccentBrush}"/>
                                                                                 </DataTrigger>

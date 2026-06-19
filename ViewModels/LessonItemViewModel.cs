@@ -15,6 +15,7 @@ public partial class LessonItemViewModel(Lesson lesson, LessonProgress progress)
     public Uri? VideoUri => HasVideo ? new Uri(Lesson.VideoPath!) : null;
 
     [ObservableProperty] private LessonState state = progress.State;
+    [ObservableProperty] private bool isSelected = false;
 
     public LessonProgress ToProgress() => new()
     {

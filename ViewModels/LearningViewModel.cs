@@ -65,6 +65,8 @@ public partial class LearningViewModel(
         EvaluationJson = "";
         EvaluationFeedback = "After saving your understanding, explain the concept again with an example before demo practice.";
         RefreshLearningGate();
+        foreach (var lesson in AllLessons)
+            lesson.IsSelected = lesson == value;
     }
 
     partial void OnPracticeAnswerChanged(string value)
