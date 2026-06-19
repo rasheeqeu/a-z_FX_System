@@ -13,4 +13,5 @@ public sealed class Lesson
     public List<PracticeTask> PracticeTasks { get; set; } = [];
     public string DemoApplication { get; set; } = "";
     public List<string> Checklist { get; set; } = [];
+    public string? VideoPath { get; set; }
 }

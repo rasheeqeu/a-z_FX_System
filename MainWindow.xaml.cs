@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using ForexTradingWorkspace.Models.Screenshots;
 using ForexTradingWorkspace.Services;
 using ForexTradingWorkspace.Services.Browser;
@@ -11,6 +12,9 @@ public partial class MainWindow : Window
 {
     private readonly ShellViewModel _viewModel;
     private readonly IScreenshotService _screenshotService;
+    private readonly DispatcherTimer _videoTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private bool _isDraggingSeek = false;
+    private bool _isVideoPlaying = false;
 
     public MainWindow(ShellViewModel viewModel, IScreenshotService screenshotService)
     {
@@ -27,6 +31,117 @@ public partial class MainWindow : Window
         await BrokerWebView.EnsureCoreWebView2Async();
         await ChartsWebView.EnsureCoreWebView2Async();
         HookFeedback();
+        HookVideoLessonChange();
+        _videoTimer.Tick += VideoTimer_Tick;
+    }
+
+    private void HookVideoLessonChange()
+    {
+        _viewModel.Learning.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName != nameof(_viewModel.Learning.SelectedLesson)) return;
+            Dispatcher.Invoke(LoadVideoForSelectedLesson);
+        };
+    }
+
+    private void LoadVideoForSelectedLesson()
+    {
+        StopVideoPlayer();
+        var lesson = _viewModel.Learning.SelectedLesson;
+        if (lesson?.HasVideo == true)
+        {
+            LessonVideoPlayer.Source = lesson.VideoUri;
+            LessonVideoPlayer.Volume = VolumeSlider.Value;
+        }
+        else
+        {
+            LessonVideoPlayer.Source = null;
+        }
+        VideoSeekBar.Value = 0;
+        VideoTimeText.Text = "0:00 / 0:00";
+        PlayPauseBtn.Content = "▶";
+    }
+
+    private void StopVideoPlayer()
+    {
+        _isVideoPlaying = false;
+        _videoTimer.Stop();
+        LessonVideoPlayer.Stop();
+        PlayPauseBtn.Content = "▶";
+    }
+
+    private void PlayPause_Click(object sender, RoutedEventArgs e)
+    {
+        if (LessonVideoPlayer.Source == null) return;
+        if (_isVideoPlaying)
+        {
+            LessonVideoPlayer.Pause();
+            _isVideoPlaying = false;
+            _videoTimer.Stop();
+            PlayPauseBtn.Content = "▶";
+        }
+        else
+        {
+            LessonVideoPlayer.Play();
+            _isVideoPlaying = true;
+            _videoTimer.Start();
+            PlayPauseBtn.Content = "⏸";
+        }
+    }
+
+    private void StopVideo_Click(object sender, RoutedEventArgs e)
+    {
+        StopVideoPlayer();
+        VideoSeekBar.Value = 0;
+    }
+
+    private void VideoPlayer_MediaOpened(object sender, RoutedEventArgs e)
+    {
+        if (LessonVideoPlayer.NaturalDuration.HasTimeSpan)
+        {
+            VideoSeekBar.Maximum = LessonVideoPlayer.NaturalDuration.TimeSpan.TotalSeconds;
+        }
+        LessonVideoPlayer.Play();
+        _isVideoPlaying = true;
+        _videoTimer.Start();
+        PlayPauseBtn.Content = "⏸";
+    }
+
+    private void VideoPlayer_MediaEnded(object sender, RoutedEventArgs e)
+    {
+        _isVideoPlaying = false;
+        _videoTimer.Stop();
+        PlayPauseBtn.Content = "▶";
+        VideoSeekBar.Value = 0;
+    }
+
+    private void VideoTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_isDraggingSeek || !LessonVideoPlayer.NaturalDuration.HasTimeSpan) return;
+        var pos = LessonVideoPlayer.Position;
+        var total = LessonVideoPlayer.NaturalDuration.TimeSpan;
+        VideoSeekBar.Value = pos.TotalSeconds;
+        VideoTimeText.Text = $"{FormatTime(pos)} / {FormatTime(total)}";
+    }
+
+    private static string FormatTime(TimeSpan t) =>
+        t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"m\:ss");
+
+    private void SeekBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        _isDraggingSeek = true;
+    }
+
+    private void SeekBar_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        LessonVideoPlayer.Position = TimeSpan.FromSeconds(VideoSeekBar.Value);
+        _isDraggingSeek = false;
+    }
+
+    private void VolumeSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (LessonVideoPlayer != null)
+            LessonVideoPlayer.Volume = e.NewValue;
     }
 
     private void NavDrawerPopup_Closed(object sender, EventArgs e)
